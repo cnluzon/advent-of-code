@@ -1,3 +1,6 @@
+# Full advent of code data
+data/*_full.txt
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
