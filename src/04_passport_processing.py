@@ -196,4 +196,10 @@ def read_passports(filename, required):
 if __name__ == "__main__":
   required = ["byr", "iyr", "eyr", "hgt", "hcl", "ecl", "pid"]
   passports = read_passports("../data/04.txt", required)
+
+  # First half
+  print(sum((len(p.missing_fields()) == 0) for p in passports))
+
+  # Second half
   print(sum(p.is_valid() for p in passports))
+
