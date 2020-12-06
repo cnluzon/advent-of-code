@@ -30,10 +30,17 @@ class CustomFormGroup:
     def __init__(self, forms: List[CustomForm]):
         self.forms = forms
 
-    def common_answers(self):
+    def union_answers(self):
         acum = self.forms[0].to_binary()
         for form in self.forms[1:]:
             acum = np.logical_or(acum, form.to_binary())
+
+        return CustomForm.from_binary(acum)
+
+    def intersection_answers(self):
+        acum = self.forms[0].to_binary()
+        for form in self.forms[1:]:
+            acum = np.logical_and(acum, form.to_binary())
 
         return CustomForm.from_binary(acum)
 
@@ -50,5 +57,8 @@ def parse_custom_forms(filename) -> List[CustomFormGroup]:
 if __name__ == "__main__":
     groups = parse_custom_forms("../data/06_full.txt")
 
-    solution = sum(len(g.common_answers()) for g in groups)
+    solution = sum(len(g.union_answers()) for g in groups)
     print(solution)
+
+    solution_all = sum(len(g.intersection_answers()) for g in groups)
+    print(solution_all)
