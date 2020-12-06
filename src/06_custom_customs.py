@@ -1,29 +1,10 @@
-import numpy as np
 from typing import List
 from common import split
 
 
 class CustomForm:
     def __init__(self, answers):
-        self.answers = answers
-
-    def __len__(self):
-        return len(self.answers)
-
-    def to_binary(self):
-        binary_rep = np.zeros(26, dtype=bool)
-        for c in self.answers:
-            index = ord(c) - ord('a')
-            binary_rep[index] = True
-        return binary_rep
-
-    @classmethod
-    def from_binary(cls, binary_rep):
-        answers = ''
-        for i, b in enumerate(binary_rep):
-            if b:
-                answers += chr(i + ord('a'))
-        return cls(answers)
+        self.answers = set(answers)
 
 
 class CustomFormGroup:
@@ -31,18 +12,18 @@ class CustomFormGroup:
         self.forms = forms
 
     def union_answers(self):
-        acum = self.forms[0].to_binary()
+        acum = self.forms[0].answers
         for form in self.forms[1:]:
-            acum = np.logical_or(acum, form.to_binary())
+            acum = acum.union(form.answers)
 
-        return CustomForm.from_binary(acum)
+        return acum
 
     def intersection_answers(self):
-        acum = self.forms[0].to_binary()
+        acum = self.forms[0].answers
         for form in self.forms[1:]:
-            acum = np.logical_and(acum, form.to_binary())
+            acum = acum.intersection(form.answers)
 
-        return CustomForm.from_binary(acum)
+        return acum
 
 
 def parse_custom_forms(filename) -> List[CustomFormGroup]:
