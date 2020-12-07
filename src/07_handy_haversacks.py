@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-
 import networkx as nx
 
 
@@ -16,13 +15,9 @@ class BagGroup:
 
 class BagRegulations:
     def __init__(self):
-        self.bag_info = {}
         self.dependencies = nx.DiGraph()
 
     def add_bags(self, bag_list):
-        for bag in bag_list:
-            self.bag_info[bag.id] = bag
-
         curr_nodes = self.dependencies.nodes
         self.dependencies.add_nodes_from([bag.id for bag in bag_list if bag.id not in curr_nodes])
 
@@ -51,7 +46,6 @@ class BagRegulations:
         self.dependencies.remove_node("root")
         return resulting_bags
 
-
     def count_bags_inside(self, bag_type):
         bags_in = list(self.dependencies.successors(bag_type))
         # Base case: Does not contain anything
@@ -62,7 +56,7 @@ class BagRegulations:
             value = 0
             for b in bags_in:
                 n_bags = self.dependencies.get_edge_data(bag_type, b)["amount"]
-                value += self.count_bags_inside(b)*n_bags + n_bags
+                value += self.count_bags_inside(b) * n_bags + n_bags
 
             return value
 
