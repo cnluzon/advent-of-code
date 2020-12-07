@@ -30,11 +30,7 @@ class BagRegulations:
             self.dependencies.add_edge(container.id, bag.id, amount=bag.amount)
 
     def find_containers(self, bag_type):
-        self.dependencies.add_node("root")
-        for node in self.dependencies.nodes:
-            predecessors = list(self.dependencies.predecessors(node))
-            if not predecessors:
-                self.dependencies.add_edge("root", node)
+        self._add_root_node()
 
         paths = nx.algorithms.all_simple_paths(self.dependencies, "root", "shiny_gold")
         resulting_bags = set()
@@ -45,6 +41,13 @@ class BagRegulations:
 
         self.dependencies.remove_node("root")
         return resulting_bags
+
+    def _add_root_node(self):
+        self.dependencies.add_node("root")
+        for node in self.dependencies.nodes:
+            predecessors = list(self.dependencies.predecessors(node))
+            if not predecessors:
+                self.dependencies.add_edge("root", node)
 
     def count_bags_inside(self, bag_type):
         bags_in = list(self.dependencies.successors(bag_type))
