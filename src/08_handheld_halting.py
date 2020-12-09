@@ -1,5 +1,13 @@
 from dataclasses import dataclass, field
 from typing import List
+from enum import Enum
+
+
+class ExecutionCode(Enum):
+    SUCCESS = 0
+    END_OF_PROGRAM = 1
+    OUT_OF_MEMORY = -1
+    REPEATED_OPERATION = -2
 
 
 @dataclass
@@ -15,34 +23,77 @@ class GameBoy:
     inst_pointer: int = 0
     boot_code: List[Operation] = field(default_factory=list)
 
-    def step(self):
-        try:
-            op = self.boot_code[self.inst_pointer]
-        except IndexError:
-            raise IndexError(f"Out of memory bounds: {self.inst_pointer}")
+    def __len__(self):
+        return len(self.boot_code)
 
-        if not op.executed:
-            method = getattr(self, f"_execute_{op.code}")
-            method(op)
-            op.executed = True
-            return True
+    def reset(self):
+        self.accumulator = 0
+        self.inst_pointer = 0
+        for op in self.boot_code:
+            op.executed = False
+
+    def swap(self, index):
+        if self.boot_code[index].code == "nop":
+            self.boot_code[index].code = "jmp"
+        elif self.boot_code[index].code == "jmp":
+            self.boot_code[index].code = "nop"
+
+    def step(self) -> ExecutionCode:
+        op = self.boot_code[self.inst_pointer]
+        if op.executed:
+            return ExecutionCode.REPEATED_OPERATION
         else:
-            return False
+            method = getattr(self, f"_execute_{op.code}")
+            result_code = method(op)
+            op.executed = True
+            return result_code
 
-    def find_loop(self):
-        while self.step():
-            pass
-        return self.accumulator
+    def run(self) -> ExecutionCode:
+        exec_code = self.step()
+        while exec_code == ExecutionCode.SUCCESS:
+            exec_code = self.step()
 
-    def _execute_nop(self, op):
+        return exec_code
+
+    def _execute_nop(self, op) -> ExecutionCode:
         self.inst_pointer += 1
+        if self._code_ended():
+            return ExecutionCode.END_OF_PROGRAM
+        return ExecutionCode.SUCCESS
 
-    def _execute_acc(self, op):
+    def _execute_acc(self, op) -> ExecutionCode:
         self.accumulator += op.value
         self.inst_pointer += 1
+        if self._code_ended():
+            return ExecutionCode.END_OF_PROGRAM
+        return ExecutionCode.SUCCESS
 
-    def _execute_jmp(self, op):
+    def _execute_jmp(self, op) -> ExecutionCode:
         self.inst_pointer += op.value
+        # Does a jmp +1 at the end of a program produce a END_OF_PROGRAM or an OUT_OF_MEMORY error?
+        # I'm assuming that's success
+        if self._code_ended():
+            return ExecutionCode.END_OF_PROGRAM
+        elif self.inst_pointer < 0 or self.inst_pointer > len(self.boot_code):
+            return ExecutionCode.OUT_OF_MEMORY
+        return ExecutionCode.SUCCESS
+
+    def _code_ended(self):
+        if self.inst_pointer == len(self.boot_code):
+            return True
+        return False
+
+
+class GameBoyFactory:
+    def __init__(self, a_game_boy):
+        self.game_boy = a_game_boy
+
+    def __iter__(self):
+        for i in range(len(self.game_boy)):
+            self.game_boy.swap(i)
+            yield self.game_boy
+            self.game_boy.swap(i)
+            self.game_boy.reset()
 
 
 def read_boot_code(filename):
@@ -55,12 +106,20 @@ def read_boot_code(filename):
 
 
 def parse_operation(line):
-    code, value = line.split()
-    value = int(value)
-    return Operation(code=code, value=value)
+    code_str, value_str = line.split()
+    value = int(value_str)
+    return Operation(code=code_str, value=value)
 
 
 if __name__ == "__main__":
     game_boy = read_boot_code("../data/08_full.txt")
 
-    print(game_boy.find_loop())
+    code = game_boy.run()
+    print(game_boy.accumulator)
+
+    game_boy.reset()
+    factory = GameBoyFactory(game_boy)
+    for gb in factory:
+        code = gb.run()
+        if code == ExecutionCode.END_OF_PROGRAM:
+            print(gb.accumulator)
