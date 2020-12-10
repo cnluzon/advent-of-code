@@ -49,10 +49,8 @@ class AdapterSet:
         return diffs
 
     def compute_possible_arrangements(self):
-        # First solution is the longest one. Rest of solutions are
-        # chipping out at omit-able adapters. Since distances are
-        # only 1 or 3, 3- away elements are fixed and the others are
-        # removable.
+        # 3- away elements are fixed and the others are removable.
+        # The others are always 1-away from each other (no 2's on the data).
         fixed_elements = np.zeros(len(self.values))
         for i in range(len(self.values) - 1):
             if self.values[i + 1] - self.values[i] == 3:
@@ -63,7 +61,7 @@ class AdapterSet:
         fixed_elements[-1] = 1
 
         # Now count lengths of gaps and multiply by possibilities
-        # 3 -> 7, 2 -> 4, 1 -> 2
+        # 3 -> 7 (2^3 minus all-remove). 2 -> 4 (2^2), 1 -> 2 (2^1).
         possibilities = []
         combinations = {3: 7, 2: 4, 1: 2}
         i = 0
