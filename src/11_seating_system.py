@@ -94,12 +94,15 @@ def read_seat_layout(filename):
 
 
 if __name__ == "__main__":
-    seats = read_seat_layout("../data/11_full.txt")
+    seats = read_seat_layout("../data/11.txt")
+
+    while seats.update(mode="neighbors"):
+        pass
+    print(seats.occupied_seats())
+
+    seats = read_seat_layout("../data/11.txt")
 
     while seats.update(mode="sight"):
         pass
-
-    # print(seats)
-
     print(seats.occupied_seats())
 
