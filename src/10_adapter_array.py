@@ -2,7 +2,7 @@ from dataclasses import dataclass, field
 from typing import List
 import numpy as np
 import math
-
+from itertools import chain, combinations
 
 @dataclass
 class AdapterSet:
@@ -13,6 +13,7 @@ class AdapterSet:
     def __post_init__(self):
         self.values = sorted(self.values)
         self.max_jolts = max(self.values) + 3
+        self.values = [0] + self.values + [self.max_jolts]
 
     def find_valid_adapters(self, jolts):
         return filter(lambda x: jolts < x <= jolts + self.allowed_difference, self.values)
@@ -41,39 +42,48 @@ class AdapterSet:
     def compute_differences_silly(self):
         order = sorted(self.values)
         diffs = {i: 0 for i in range(1, 4)}
-        diffs[order[0]] = 1
-        diffs[3] += 1
         for i in range(len(order) - 1):
             diffs[order[i + 1] - order[i]] += 1
 
         return diffs
 
-    def compute_possible_arrangements(self):
-        # 3- away elements are fixed and the others are removable.
-        # The others are always 1-away from each other (no 2's on the data).
+    def count_possible_arrangements(self):
+        # Fix elements that are always going to be in all the solutions
         fixed_elements = np.zeros(len(self.values))
-        for i in range(len(self.values) - 1):
+        for i in range(1, len(self.values) - 1):
             if self.values[i + 1] - self.values[i] == 3:
                 fixed_elements[i] = 1
                 fixed_elements[i + 1] = 1
 
-        # Last element always fixed (always 3 away)
-        fixed_elements[-1] = 1
-
-        # Now count lengths of gaps and multiply by possibilities
-        # 3 -> 7 (2^3 minus all-remove). 2 -> 4 (2^2), 1 -> 2 (2^1).
         possibilities = []
-        combinations = {3: 7, 2: 4, 1: 2}
-        i = 0
+        i = 1
         while i < (len(fixed_elements) - 1):
             if fixed_elements[i] == 0:
                 p = self.count_ahead(fixed_elements, i, 0)
-                possibilities.append(combinations[p])
+                # Only go powerset in sets of consecutive removable elements, where it's more difficult
+                # to make assumptions
+                possibilities.append(self.all_possible_arrangements(self.values[i-1:i+p+1]))
                 i += p
             elif fixed_elements[i] == 1:
                 i += 1
 
+        # These arrangements are independent of each other, possibilities are a product
         return math.prod(possibilities)
+
+    def all_possible_arrangements(self, values):
+        # assume 0 and end are fixed
+        arrangements = powerset(values[1:-1])
+        count = 0
+        for a in arrangements:
+            if self.is_valid([values[0]] + list(a) + [values[-1]]):
+                count += 1
+        return count
+
+    def is_valid(self, values):
+        for i in range(len(values)-1):
+            if values[i+1] - values[i] > 3:
+                return False
+        return True
 
     def count_ahead(self, iter, index, value):
         count = 0
@@ -83,14 +93,19 @@ class AdapterSet:
         return count
 
 
+def powerset(iterable):
+    s = list(iterable)
+    return chain.from_iterable(combinations(s, r) for r in range(len(s)+1))
+
+
 def read_values(filename):
     with open(filename) as fi:
         return [int(v) for v in fi.readlines()]
 
 
 if __name__ == "__main__":
-    values = read_values("../data/10.txt")
-    print(list(sorted(values)))
+    values = read_values("../data/10_full.txt")
+
     my_bag = AdapterSet(values)
 
     differences = my_bag.compute_differences(0)
@@ -101,4 +116,4 @@ if __name__ == "__main__":
     print(differences)
     print(differences[1] * differences[3])
 
-    print(my_bag.compute_possible_arrangements())
+    print(my_bag.count_possible_arrangements())
