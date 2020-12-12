@@ -1,12 +1,7 @@
 from dataclasses import dataclass
 import math
 import numpy as np
-
-
-@dataclass
-class Point:
-  x: int
-  y: int
+from common import Point
 
 
 class CircularMap:
