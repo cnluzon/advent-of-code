@@ -50,20 +50,58 @@ def validate(ruledict, k, message):
     return [any(match), message[len(match):]]
 
 
-def validate_split(ruledict, k, message):
-    # Poda el diccionario para que solo tenga la rama 42
-    pass
+def validate_split(ruledict, message):
+    # The result matches the "expression" 42+ 42{n} 31{n}
+
+    # At least one 42 complying part
+    result = validate(rules_dict, '42', message)
+    valid = result[0]
+    remainder = result[1]
+
+    # Then a number of 42 > = number of 31 after, since the first rule
+    # generates an unlimited amount of 42-words
+    n_42 = 0
+    while valid and remainder != '':
+        partial = validate(rules_dict, '42', remainder)
+        valid = partial[0]
+        if valid:
+            n_42 += 1
+            remainder = partial[1]
+
+    n_31 = 0
+    valid = True
+    while valid and remainder != '':
+        partial = validate(rules_dict, '31', remainder)
+        valid = partial[0]
+        if valid:
+            n_31 += 1
+            remainder = partial[1]
+
+    if n_42 >= n_31 >= 1 and remainder == '':
+        return True
+
+    return False
+
 
 if __name__ == "__main__":
-    rules_dict, messages = read_data_input("../data/19_loops.txt")
+    rules_dict, messages = read_data_input("../data/19.txt")
 
-    result = validate(rules_dict, '0', messages[0])
+    result = validate_split(rules_dict, messages[0])
 
     count = 0
     for m in messages:
-        try:
-            result = validate(rules_dict, '0', m)
+        result = validate(rules_dict, '0', m)
         if result[0] and len(result[1]) == 0:
+            count += 1
+
+    print(count)
+
+    rules_dict, messages = read_data_input("../data/19_full_loops.txt")
+
+    count = 0
+    for m in messages:
+        result = validate_split(rules_dict, m)
+        if result:
             count += 1
 
     print(count)
